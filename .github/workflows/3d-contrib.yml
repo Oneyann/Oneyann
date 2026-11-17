@@ -1,0 +1,36 @@
+name: 3D contributions
+
+on:
+  schedule:
+    - cron: "17 3 * * *" # раз в сутки, чтобы график не отставал от коммитов
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: generate-3d-contrib
+    steps:
+      - name: Забрать репозиторий
+        uses: actions/checkout@v5
+
+      - name: Собрать 3D-график вкладов
+        uses: yoshi389111/github-profile-3d-contrib@v0.9.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USERNAME: ${{ github.repository_owner }}
+          SETTING_JSON: conf/profile-3d-contrib.json
+
+      - name: Опубликовать в ветку output-3d-contrib
+        uses: crazy-max/ghaction-github-pages@v4
+        with:
+          target_branch: output-3d-contrib
+          build_dir: profile-3d-contrib
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
