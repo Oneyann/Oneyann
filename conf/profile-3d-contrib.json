@@ -8,7 +8,15 @@
     "weakColor": "#8c959f",
     "radarColor": "#0969da",
     "growingAnimation": true,
-    "contribColors": ["#ebedf0", "#dbeafe", "#bfdbfe", "#93c5fd", "#60a5fa"]
+    "contribColors": ["#ebedf0", "#dbeafe", "#bfdbfe", "#93c5fd", "#60a5fa"],
+    "l10n": {
+      "commit": "Коммиты",
+      "repo": "Репозитории",
+      "review": "Ревью",
+      "pullreq": "PR",
+      "issue": "Задачи",
+      "contrib": "контрибуций"
+    }
   },
   {
     "type": "normal",
@@ -19,6 +27,14 @@
     "weakColor": "#8b949e",
     "radarColor": "#58a6ff",
     "growingAnimation": true,
-    "contribColors": ["#161b22", "#123f6b", "#1b5aa0", "#2f7fd0", "#58a6ff"]
+    "contribColors": ["#161b22", "#123f6b", "#1b5aa0", "#2f7fd0", "#58a6ff"],
+    "l10n": {
+      "commit": "Коммиты",
+      "repo": "Репозитории",
+      "review": "Ревью",
+      "pullreq": "PR",
+      "issue": "Задачи",
+      "contrib": "контрибуций"
+    }
   }
 ]
