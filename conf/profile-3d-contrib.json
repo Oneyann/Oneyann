@@ -27,7 +27,7 @@
     "weakColor": "#8b949e",
     "radarColor": "#58a6ff",
     "growingAnimation": true,
-    "contribColors": ["#161b22", "#123f6b", "#1b5aa0", "#2f7fd0", "#58a6ff"],
+    "contribColors": ["#1c2128", "#123f6b", "#1b5aa0", "#2f7fd0", "#58a6ff"],
     "l10n": {
       "commit": "Коммиты",
       "repo": "Репозитории",
