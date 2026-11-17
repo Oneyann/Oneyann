@@ -2,7 +2,7 @@
 
 <h1>Oneyann</h1>
 
-<a href="https://github.com/Oneyann?tab=repositories"><img src="https://img.shields.io/badge/-Oneyann-1F2328?style=flat-square&logo=github&logoColor=FFFFFF" alt="GitHub" /></a>
+<!-- <a href="https://github.com/Oneyann?tab=repositories"><img src="https://img.shields.io/badge/-Oneyann-1F2328?style=flat-square&logo=github&logoColor=FFFFFF" alt="GitHub" /></a> -->
 
 <!-- Контакты: раскомментируй и подставь свои ссылки
 <a href="https://t.me/username"><img src="https://img.shields.io/badge/-Telegram-0969DA?style=flat-square&logo=telegram&logoColor=FFFFFF" alt="Telegram" /></a>
