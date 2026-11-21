@@ -1,9 +1,9 @@
 &nbsp;
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Oneyann/Oneyann/output-2d-contrib/night.svg" />
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Oneyann/Oneyann/output-2d-contrib/day.svg" />
-    <img width="100%" alt="График вкладов за год" src="https://raw.githubusercontent.com/Oneyann/Oneyann/output-2d-contrib/day.svg" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Oneyann/Oneyann/output-stats/night.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Oneyann/Oneyann/output-stats/day.svg" />
+    <img width="460" alt="Языки и статистика" src="https://raw.githubusercontent.com/Oneyann/Oneyann/output-stats/day.svg" />
   </picture>
 </p>
 

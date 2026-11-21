@@ -1,8 +1,8 @@
-name: 2D contributions
+name: Profile stats
 
 on:
   schedule:
-    - cron: "17 3 * * *" # раз в сутки, чтобы график не отставал от коммитов
+    - cron: "17 3 * * *" # раз в сутки, чтобы цифры не отставали от коммитов
   workflow_dispatch:
   push:
     branches:
@@ -15,7 +15,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: generate-2d-contrib
+    name: generate-profile-stats
     steps:
       - name: Забрать репозиторий
         uses: actions/checkout@v5
@@ -25,16 +25,16 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Собрать 2D-график вкладов
-        run: node scripts/gen-2d-contrib.mjs
+      - name: Собрать карточку языков и статистики
+        run: node scripts/gen-stats.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
 
-      - name: Опубликовать в ветку output-2d-contrib
+      - name: Опубликовать в ветку output-stats
         uses: crazy-max/ghaction-github-pages@v4
         with:
-          target_branch: output-2d-contrib
-          build_dir: profile-2d-contrib
+          target_branch: output-stats
+          build_dir: profile-stats
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
