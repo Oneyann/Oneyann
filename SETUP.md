@@ -22,17 +22,29 @@ git push -u origin main
 
 Открыть `https://github.com/Oneyann` — README уже на месте.
 
-## 3. Включить 3D-график вкладов
+## 3. Включить 2D-график вкладов
 
 1. В репозитории → вкладка **Actions** → «I understand my workflows, go ahead and enable them».
-2. Слева выбрать **3D contributions** → **Run workflow** → **Run workflow**.
-3. Через 1–2 минуты появится ветка **`output-3d-contrib`** с файлами `day.svg` и `night.svg`.
+2. Слева выбрать **2D contributions** → **Run workflow** → **Run workflow**.
+3. Через 1–2 минуты появится ветка **`output-2d-contrib`** с файлами `day.svg` и `night.svg`.
 4. GitHub кеширует картинки примерно на 5 минут. Если график всё ещё битый — добавь в конце URL `?v=2`.
 
 Дальше workflow сам обновляет график раз в сутки и при каждом пуше в `main`.
 
-Палитра графика лежит в `conf/profile-3d-contrib.json`: пять оттенков для уровня вкладов,
-цвет фона и текста. Дневной и ночной варианты настраиваются отдельно.
+График рисует `scripts/gen-2d-contrib.mjs` — обычный Node 20 без зависимостей, данные берёт из
+GitHub GraphQL API. Палитра и подписи лежат в `conf/profile-2d-contrib.json`: пять оттенков для
+уровня вкладов, цвет фона и текста, размеры клетки и зазора. Дневной и ночной варианты настраиваются
+отдельно.
+
+Локально пересобрать картинки можно так:
+
+```powershell
+$env:GITHUB_TOKEN = gh auth token
+$env:GITHUB_REPOSITORY_OWNER = "Oneyann"
+node scripts/gen-2d-contrib.mjs
+```
+
+Результат появится в `profile-2d-contrib/` (в git не попадает, папка в `.gitignore`).
 
 ## 4. Контакты
 
@@ -45,7 +57,7 @@ git push -u origin main
 | :--- | :--- | :--- |
 | В `preview.html` часть картинок пустая, а на GitHub они видны | твой провайдер/DPI режет домен сервиса, а на GitHub картинки идут через прокси GitHub (camo) | ничего не делать, проверить уже на github.com |
 | Карточка статистики пустая или «Maximum retries» | сервис `github-readme-stats` перегружен | заменить `github-readme-stats-fast.vercel.app` на `github-readme-stats.vercel.app` (и наоборот) |
-| 3D-график не появился | workflow не запускался или упал | Actions → 3D contributions → смотреть лог; проверить, что появилась ветка `output-3d-contrib` |
+| 2D-график не появился | workflow не запускался или упал | Actions → 2D contributions → смотреть лог; проверить, что появилась ветка `output-2d-contrib` |
 | README не виден в профиле | репозиторий назван иначе или приватный | переименовать в `Oneyann`, сделать public |
 
 ## Про `preview.html`
