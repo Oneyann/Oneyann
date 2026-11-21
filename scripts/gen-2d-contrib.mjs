@@ -29,6 +29,7 @@ const query = `
             contributionDays {
               date
               contributionCount
+              weekday
             }
           }
         }
@@ -112,9 +113,9 @@ function render(calendar, theme, cfg) {
 
   // Сетка.
   calendar.weeks.forEach((week, w) => {
-    week.contributionDays.forEach((day, d) => {
+    week.contributionDays.forEach((day) => {
       const x = pad + leftPad + w * (cell + gap);
-      const y = pad + topPad + d * (cell + gap);
+      const y = pad + topPad + day.weekday * (cell + gap);
       const level = levelOf(day.contributionCount, levels);
       parts.push(
         `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" rx="${radius}" fill="${theme.levels[level]}"><title>${day.date}: ${day.contributionCount}</title></rect>`,
