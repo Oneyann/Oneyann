@@ -115,10 +115,10 @@ function languagesOf(repos, limit) {
 
 function render(stats, theme, cfg) {
   const pad = 16;
-  const headerY = 26;
-  const rowH = 48;
-  const rowsTop = 64;
-  const footerGap = 96;
+  const headerY = 32;
+  const rowH = 64;
+  const rowsTop = 72;
+  const footerGap = 100;
   const rows = stats.languages.length;
 
   const width = cfg.width;
@@ -136,22 +136,22 @@ function render(stats, theme, cfg) {
     scene(theme, cfg, width, height),
   ];
 
-  parts.push(path(panelX, headerY, cfg.labels.title, 2, theme.muted));
+  parts.push(path(panelX, headerY, cfg.labels.title, 3, theme.muted));
 
-  const blockW = 6;
-  const blockGap = 3;
+  const blockW = 8;
+  const blockGap = 4;
   const blocks = Math.floor((panelW + blockGap) / (blockW + blockGap));
 
   stats.languages.forEach((lang, i) => {
     const y = rowsTop + i * rowH;
     const pct = `${formatPct(lang.pct)}%`;
-    const pctW = measure(pct, 2);
-    const name = fit(lang.name.toUpperCase(), 2, panelW - pctW - 14);
+    const pctW = measure(pct, 3);
+    const name = fit(lang.name.toUpperCase(), 3, panelW - pctW - 20);
 
-    parts.push(path(panelX, y, name, 2, theme.text));
-    parts.push(path(panelRight, y, pct, 2, theme.muted, "end"));
+    parts.push(path(panelX, y, name, 3, theme.text));
+    parts.push(path(panelRight, y, pct, 3, theme.muted, "end"));
 
-    const barY = y + 24;
+    const barY = y + 30;
     const filled = Math.round((blocks * lang.pct) / 100);
     const bar = [];
     for (let b = 0; b < blocks; b++) {
@@ -167,7 +167,7 @@ function render(stats, theme, cfg) {
     `${stats.contribs} ${pluralForm(stats.contribs, cfg.labels.contribs)} за год`,
   ];
   counters.forEach((line, i) => {
-    parts.push(path(panelX, height - 118 + i * 26, line.toUpperCase(), 2, i === 0 ? theme.text : theme.muted));
+    parts.push(path(panelX, height - 140 + i * 34, line.toUpperCase(), 3, i === 0 ? theme.text : theme.muted));
   });
 
   parts.push("</svg>");
@@ -178,7 +178,7 @@ function render(stats, theme, cfg) {
 function scene(theme, cfg, width, height) {
   const p = cfg.pixel;
   const sceneW = cfg.sceneWidth;
-  const groundY = height - 26;
+  const groundY = height - 30;
   const parts = [];
 
   // Небо — широкие пиксельные полосы.
@@ -201,47 +201,52 @@ function scene(theme, cfg, width, height) {
   // Два слоя гор со снежными вершинами.
   parts.push(
     mountains(theme.far, p, width, groundY, 36, [
-      { x: 30, w: 72, h: 42 },
-      { x: 140, w: 82, h: 48 },
-      { x: 260, w: 90, h: 40 },
-      { x: 380, w: 76, h: 46 },
-      { x: 490, w: 72, h: 38 },
+      { x: 40, w: 90, h: 46 },
+      { x: 180, w: 100, h: 50 },
+      { x: 330, w: 110, h: 42 },
+      { x: 490, w: 95, h: 48 },
+      { x: 650, w: 100, h: 44 },
+      { x: 790, w: 90, h: 40 },
     ]),
   );
   parts.push(
     mountains(theme.near, p, width, groundY, 99, [
-      { x: 90, w: 96, h: 30 },
-      { x: 230, w: 102, h: 26 },
-      { x: 370, w: 92, h: 31 },
-      { x: 480, w: 72, h: 23 },
+      { x: 120, w: 120, h: 30 },
+      { x: 300, w: 125, h: 28 },
+      { x: 480, w: 110, h: 32 },
+      { x: 670, w: 110, h: 26 },
+      { x: 790, w: 80, h: 24 },
     ]),
   );
 
   parts.push(`<rect x="0" y="${groundY}" width="${width}" height="${height - groundY}" fill="${theme.ground}"/>`);
-  for (let i = 0; i < 24; i++) {
+  for (let i = 0; i < 36; i++) {
     const gx = (i * 23) % (width - 8);
     const gy = groundY + p + ((i * 7) % 3) * p;
     parts.push(`<rect x="${gx}" y="${gy}" width="${p}" height="${p}" fill="${theme.groundDark}"/>`);
   }
 
-  const trunkW = 5 * p;
-  const trunkH = 9 * p;
-  const trunkX = Math.round((sceneW / 2 - trunkW / 2) / p) * p;
-  const trunkY = groundY - trunkH;
+  // Бонсай: короткий изогнутый ствол, плоские ярусы кроны и горшок.
+  const cx = Math.round(sceneW / 2 / p) * p;
+  const potW = 8 * p;
+  const potH = 3 * p;
+  const potX = cx - potW / 2;
+  const potY = groundY - potH;
+  const trunkTop = potY - 6 * p;
+
+  parts.push(`<rect x="${potX - p}" y="${potY}" width="${potW + 2 * p}" height="${p}" fill="${theme.potRim}"/>`);
+  parts.push(`<rect x="${potX}" y="${potY + p}" width="${potW}" height="${potH - p}" fill="${theme.pot}"/>`);
+  parts.push(
+    `<rect x="${cx - 2 * p}" y="${potY - 2 * p}" width="${4 * p}" height="${2 * p}" fill="${theme.trunkDark}"/>`,
+    `<rect x="${cx - 3 * p}" y="${potY - 4 * p}" width="${3 * p}" height="${2 * p}" fill="${theme.trunk}"/>`,
+    `<rect x="${cx - 2 * p}" y="${trunkTop}" width="${3 * p}" height="${2 * p}" fill="${theme.trunk}"/>`,
+    `<rect x="${cx + p}" y="${trunkTop - p}" width="${2 * p}" height="${p}" fill="${theme.trunk}"/>`,
+  );
 
   const canopy = cfg.canopy;
   const canopyW = canopy[0].length * p;
   const canopyX = Math.round((sceneW / 2 - canopyW / 2) / p) * p;
-  const canopyY = trunkY - canopy.length * p + p * 2;
-
-  parts.push(`<rect x="${trunkX}" y="${trunkY}" width="${p}" height="${trunkH}" fill="${theme.trunkDark}"/>`);
-  parts.push(
-    `<rect x="${trunkX + p}" y="${trunkY}" width="${trunkW - p}" height="${trunkH}" fill="${theme.trunk}"/>`,
-  );
-  parts.push(
-    `<rect x="${trunkX - p * 2}" y="${trunkY + p * 3}" width="${p * 2}" height="${p}" fill="${theme.trunk}"/>`,
-    `<rect x="${trunkX + trunkW}" y="${trunkY + p * 4}" width="${p * 2}" height="${p}" fill="${theme.trunk}"/>`,
-  );
+  const canopyY = trunkTop + p - canopy.length * p;
 
   const groups = [[], [], []];
   const rnd = mulberry32(20261121);
