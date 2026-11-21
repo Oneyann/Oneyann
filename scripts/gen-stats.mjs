@@ -115,9 +115,9 @@ function languagesOf(repos, limit) {
 
 function render(stats, theme, cfg) {
   const pad = 16;
-  const headerY = 30;
-  const rowH = 52;
-  const rowsTop = 70;
+  const headerY = 26;
+  const rowH = 48;
+  const rowsTop = 64;
   const footerGap = 96;
   const rows = stats.languages.length;
 
@@ -131,7 +131,7 @@ function render(stats, theme, cfg) {
   const parts = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Языки и статистика" shape-rendering="crispEdges">`,
     `<title>Языки и статистика</title>`,
-    `<style>@media (prefers-reduced-motion: reduce){.leaf{display:none}}</style>`,
+    `<style>@media (prefers-reduced-motion: reduce){.petal{display:none}}</style>`,
     `<rect width="${width}" height="${height}" fill="${theme.background}"/>`,
     scene(theme, cfg, width, height),
   ];
@@ -167,21 +167,65 @@ function render(stats, theme, cfg) {
     `${stats.contribs} ${pluralForm(stats.contribs, cfg.labels.contribs)} за год`,
   ];
   counters.forEach((line, i) => {
-    parts.push(path(panelX, height - 78 + i * 24, line.toUpperCase(), 2, i === 0 ? theme.text : theme.muted));
+    parts.push(path(panelX, height - 118 + i * 26, line.toUpperCase(), 2, i === 0 ? theme.text : theme.muted));
   });
 
   parts.push("</svg>");
   return parts.join("");
 }
 
-// Сцена: земля, дерево с покачиванием и падающие листья.
+// Сцена: пиксельное небо, горы, сакура и летящие лепестки.
 function scene(theme, cfg, width, height) {
   const p = cfg.pixel;
   const sceneW = cfg.sceneWidth;
   const groundY = height - 26;
+  const parts = [];
+
+  // Небо — широкие пиксельные полосы.
+  const skyBand = Math.ceil(groundY / theme.sky.length);
+  theme.sky.forEach((color, i) => {
+    parts.push(`<rect x="0" y="${i * skyBand}" width="${width}" height="${skyBand}" fill="${color}"/>`);
+  });
+
+  // Солнце днём, луна ночью.
+  const orb = [3, 5, 7, 7, 7, 5, 3];
+  const orbX = sceneW - 52;
+  const orbY = 24;
+  orb.forEach((cols, row) => {
+    const inset = ((7 - cols) / 2) * p;
+    parts.push(
+      `<rect x="${orbX + inset}" y="${orbY + row * p}" width="${cols * p}" height="${p}" fill="${theme.orb}"/>`,
+    );
+  });
+
+  // Два слоя гор со снежными вершинами.
+  parts.push(
+    mountains(theme.far, p, width, groundY, 36, [
+      { x: 30, w: 72, h: 42 },
+      { x: 140, w: 82, h: 48 },
+      { x: 260, w: 90, h: 40 },
+      { x: 380, w: 76, h: 46 },
+      { x: 490, w: 72, h: 38 },
+    ]),
+  );
+  parts.push(
+    mountains(theme.near, p, width, groundY, 99, [
+      { x: 90, w: 96, h: 30 },
+      { x: 230, w: 102, h: 26 },
+      { x: 370, w: 92, h: 31 },
+      { x: 480, w: 72, h: 23 },
+    ]),
+  );
+
+  parts.push(`<rect x="0" y="${groundY}" width="${width}" height="${height - groundY}" fill="${theme.ground}"/>`);
+  for (let i = 0; i < 24; i++) {
+    const gx = (i * 23) % (width - 8);
+    const gy = groundY + p + ((i * 7) % 3) * p;
+    parts.push(`<rect x="${gx}" y="${gy}" width="${p}" height="${p}" fill="${theme.groundDark}"/>`);
+  }
 
   const trunkW = 5 * p;
-  const trunkH = 10 * p;
+  const trunkH = 9 * p;
   const trunkX = Math.round((sceneW / 2 - trunkW / 2) / p) * p;
   const trunkY = groundY - trunkH;
 
@@ -189,17 +233,6 @@ function scene(theme, cfg, width, height) {
   const canopyW = canopy[0].length * p;
   const canopyX = Math.round((sceneW / 2 - canopyW / 2) / p) * p;
   const canopyY = trunkY - canopy.length * p + p * 2;
-
-  const parts = [
-    `<rect x="0" y="${groundY}" width="${width}" height="${height - groundY}" fill="${theme.ground}"/>`,
-  ];
-
-  // Травинки-пиксели на земле.
-  for (let i = 0; i < 24; i++) {
-    const gx = (i * 23) % (width - 8);
-    const gy = groundY + p + ((i * 7) % 3) * p;
-    parts.push(`<rect x="${gx}" y="${gy}" width="${p}" height="${p}" fill="${theme.groundDark}"/>`);
-  }
 
   parts.push(`<rect x="${trunkX}" y="${trunkY}" width="${p}" height="${trunkH}" fill="${theme.trunkDark}"/>`);
   parts.push(
@@ -216,30 +249,50 @@ function scene(theme, cfg, width, height) {
     for (let c = 0; c < row.length; c++) {
       if (row[c] !== "#") continue;
       const roll = rnd();
-      const tone = r >= canopy.length - 3 ? 0 : roll < 0.15 ? 0 : roll < 0.7 ? 1 : 2;
+      const tone = r >= canopy.length - 4 ? 2 : roll < 0.12 ? 0 : roll < 0.62 ? 1 : 2;
       groups[tone].push(
         `<rect x="${canopyX + c * p}" y="${canopyY + r * p}" width="${p}" height="${p}"/>`,
       );
     }
   });
 
+  // Покачивание кроны: 1 пиксель влево-вправо.
   parts.push(
     `<g><animateTransform attributeName="transform" type="translate" values="0 0;${p} 0;0 0;-${p} 0;0 0" dur="8s" repeatCount="indefinite"/>${groups
       .map((cells, i) => `<g fill="${theme.canopy[i]}">${cells.join("")}</g>`)
       .join("")}</g>`,
   );
 
-  parts.push(leaves(theme, cfg, canopyY, groundY, sceneW));
+  parts.push(petals(theme, cfg, canopyY, groundY, sceneW));
 
-  // Упавшие листья на земле.
+  // Лепестки на земле.
   for (let i = 0; i < 7; i++) {
     const fx = 12 + ((i * 61) % (width - 26));
     parts.push(
-      `<rect x="${fx}" y="${groundY + p * 2}" width="${p}" height="${p - 1}" fill="${theme.leaves[(i + 1) % theme.leaves.length]}"/>`,
+      `<rect x="${fx}" y="${groundY + p * 2}" width="${p}" height="${p - 1}" fill="${theme.petals[(i + 1) % theme.petals.length]}"/>`,
     );
   }
 
   return parts.join("");
+}
+
+// Горы: ступенчатые пики, нарисованные колонками по одному пикселю.
+function mountains(colors, p, width, baseY, snowLine, peaks) {
+  const out = [];
+  for (let x = 0; x < width; x += p) {
+    let top = baseY;
+    for (const peak of peaks) {
+      const distance = Math.abs(x - peak.x) / peak.w;
+      if (distance >= 1) continue;
+      top = Math.min(top, baseY - Math.round(peak.h * (1 - distance)));
+    }
+    if (top === baseY) continue;
+    out.push(`<rect x="${x}" y="${top}" width="${p}" height="${baseY - top}" fill="${colors.body}"/>`);
+    if (top <= baseY - snowLine) {
+      out.push(`<rect x="${x}" y="${top}" width="${p}" height="${Math.min(10, baseY - top)}" fill="${colors.snow}"/>`);
+    }
+  }
+  return out.join("");
 }
 
 function mulberry32(seed) {
@@ -252,9 +305,9 @@ function mulberry32(seed) {
   };
 }
 
-function leaves(theme, cfg, canopyY, groundY, sceneW) {
+function petals(theme, cfg, canopyY, groundY, sceneW) {
   const out = [];
-  const count = cfg.leafCount;
+  const count = cfg.petalCount;
 
   for (let i = 0; i < count; i++) {
     const startX = 18 + ((i * 23) % (sceneW - 36));
@@ -262,14 +315,14 @@ function leaves(theme, cfg, canopyY, groundY, sceneW) {
     const fall = Math.max(30, groundY - startY + 4);
     const drift = 8 + (i % 3) * 5;
     const size = i % 3 === 0 ? 4 : 3;
-    const color = theme.leaves[i % theme.leaves.length];
+    const color = theme.petals[i % theme.petals.length];
     const dur = 6 + (i % 4);
     const begin = -(i * 0.85);
 
     const path = `M0 0C${-drift} ${fall * 0.25} ${drift} ${fall * 0.45} ${-drift / 2} ${fall * 0.6}C${-drift * 1.4} ${fall * 0.75} ${drift / 2} ${fall * 0.9} 0 ${fall}`;
 
     out.push(
-      `<g class="leaf" transform="translate(${startX} ${startY})">` +
+      `<g class="petal" transform="translate(${startX} ${startY})">` +
         `<rect width="${size}" height="${size}" fill="${color}">` +
         `<animateMotion dur="${dur}s" begin="${begin}s" repeatCount="indefinite" path="${path}" rotate="auto"/>` +
         `<animate attributeName="opacity" values="0;1;1;1;0" keyTimes="0;0.08;0.75;0.92;1" dur="${dur}s" begin="${begin}s" repeatCount="indefinite"/>` +
