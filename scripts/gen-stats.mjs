@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-// Рисует карточку «языки + цифры» в day.svg и night.svg.
-// Зависимостей нет: только Node 20+, fetch и GitHub GraphQL API.
+// Рисует пиксель-арт карточку «языки + цифры» с деревом и падающими листьями.
+// Выход: day.svg и night.svg. Зависимостей нет: Node 20+, fetch и GitHub GraphQL API.
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { measure, textPath } from "./pixel-font.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const cfg = JSON.parse(readFileSync(join(root, "conf", "profile-stats.json"), "utf8"));
@@ -114,48 +115,181 @@ function languagesOf(repos, limit) {
 
 function render(stats, theme, cfg) {
   const pad = 16;
-  const rowH = 26;
-  const barH = 4;
-  const headerH = 18;
-  const innerW = cfg.width - pad * 2;
+  const headerY = 30;
+  const rowH = 52;
+  const rowsTop = 70;
+  const footerGap = 96;
   const rows = stats.languages.length;
-  const footerH = 22;
-  const height = pad * 2 + headerH + rows * rowH + footerH;
+
+  const width = cfg.width;
+  const height = Math.max(cfg.minHeight, rowsTop + rows * rowH + footerGap);
+
+  const panelX = cfg.sceneWidth + pad;
+  const panelRight = width - pad;
+  const panelW = panelRight - panelX;
 
   const parts = [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${cfg.width}" height="${height}" viewBox="0 0 ${cfg.width} ${height}" role="img" aria-label="Языки и статистика">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Языки и статистика" shape-rendering="crispEdges">`,
     `<title>Языки и статистика</title>`,
-    `<rect width="${cfg.width}" height="${height}" fill="${theme.background}"/>`,
+    `<style>@media (prefers-reduced-motion: reduce){.leaf{display:none}}</style>`,
+    `<rect width="${width}" height="${height}" fill="${theme.background}"/>`,
+    scene(theme, cfg, width, height),
   ];
 
+  parts.push(path(panelX, headerY, cfg.labels.title, 2, theme.muted));
+
+  const blockW = 6;
+  const blockGap = 3;
+  const blocks = Math.floor((panelW + blockGap) / (blockW + blockGap));
+
   stats.languages.forEach((lang, i) => {
-    const y = pad + headerH + i * rowH;
+    const y = rowsTop + i * rowH;
     const pct = `${formatPct(lang.pct)}%`;
-    parts.push(
-      text(pad, y + 9, lang.name, theme.text, 11, cfg.font),
-      text(cfg.width - pad, y + 9, pct, theme.muted, 11, cfg.font, "end"),
-      `<rect x="${pad}" y="${y + 15}" width="${innerW}" height="${barH}" rx="2" fill="${theme.track}"/>`,
-      `<rect x="${pad}" y="${y + 15}" width="${Math.max(3, Math.round((innerW * lang.pct) / 100))}" height="${barH}" rx="2" fill="${lang.color || theme.muted}"/>`,
-    );
+    const pctW = measure(pct, 2);
+    const name = fit(lang.name.toUpperCase(), 2, panelW - pctW - 14);
+
+    parts.push(path(panelX, y, name, 2, theme.text));
+    parts.push(path(panelRight, y, pct, 2, theme.muted, "end"));
+
+    const barY = y + 24;
+    const filled = Math.round((blocks * lang.pct) / 100);
+    const bar = [];
+    for (let b = 0; b < blocks; b++) {
+      const bx = panelX + b * (blockW + blockGap);
+      bar.push(`<rect x="${bx}" y="${barY}" width="${blockW}" height="${blockW}"/>`);
+    }
+    parts.push(`<g fill="${theme.track}">${bar.slice(filled).join("")}</g>`);
+    parts.push(`<g fill="${lang.color || theme.muted}">${bar.slice(0, filled).join("")}</g>`);
   });
 
-  const footer = [
-    plural(stats.repos, cfg.labels.repos),
-    plural(stats.stars, cfg.labels.stars),
-    plural(stats.contribs, cfg.labels.contribs),
-  ].join(" · ");
+  const counters = [
+    `${stats.repos} ${pluralForm(stats.repos, cfg.labels.repos)} · ${stats.stars} ${pluralForm(stats.stars, cfg.labels.stars)}`,
+    `${stats.contribs} ${pluralForm(stats.contribs, cfg.labels.contribs)} за год`,
+  ];
+  counters.forEach((line, i) => {
+    parts.push(path(panelX, height - 78 + i * 24, line.toUpperCase(), 2, i === 0 ? theme.text : theme.muted));
+  });
 
-  parts.push(
-    text(pad, pad + 10, cfg.labels.title, theme.muted, 11, cfg.font),
-    text(pad, pad + headerH + rows * rowH + 12, footer, theme.muted, 10, cfg.font),
-  );
   parts.push("</svg>");
   return parts.join("");
 }
 
-function text(x, y, value, fill, size, font, anchor) {
-  const anchorAttr = anchor ? ` text-anchor="${anchor}"` : "";
-  return `<text x="${x}" y="${y}" fill="${fill}" font-size="${size}" font-family="${font}"${anchorAttr}>${value}</text>`;
+// Сцена: земля, дерево с покачиванием и падающие листья.
+function scene(theme, cfg, width, height) {
+  const p = cfg.pixel;
+  const sceneW = cfg.sceneWidth;
+  const groundY = height - 26;
+
+  const trunkW = 5 * p;
+  const trunkH = 10 * p;
+  const trunkX = Math.round((sceneW / 2 - trunkW / 2) / p) * p;
+  const trunkY = groundY - trunkH;
+
+  const canopy = cfg.canopy;
+  const canopyW = canopy[0].length * p;
+  const canopyX = Math.round((sceneW / 2 - canopyW / 2) / p) * p;
+  const canopyY = trunkY - canopy.length * p + p * 2;
+
+  const parts = [
+    `<rect x="0" y="${groundY}" width="${width}" height="${height - groundY}" fill="${theme.ground}"/>`,
+  ];
+
+  // Травинки-пиксели на земле.
+  for (let i = 0; i < 24; i++) {
+    const gx = (i * 23) % (width - 8);
+    const gy = groundY + p + ((i * 7) % 3) * p;
+    parts.push(`<rect x="${gx}" y="${gy}" width="${p}" height="${p}" fill="${theme.groundDark}"/>`);
+  }
+
+  parts.push(`<rect x="${trunkX}" y="${trunkY}" width="${p}" height="${trunkH}" fill="${theme.trunkDark}"/>`);
+  parts.push(
+    `<rect x="${trunkX + p}" y="${trunkY}" width="${trunkW - p}" height="${trunkH}" fill="${theme.trunk}"/>`,
+  );
+  parts.push(
+    `<rect x="${trunkX - p * 2}" y="${trunkY + p * 3}" width="${p * 2}" height="${p}" fill="${theme.trunk}"/>`,
+    `<rect x="${trunkX + trunkW}" y="${trunkY + p * 4}" width="${p * 2}" height="${p}" fill="${theme.trunk}"/>`,
+  );
+
+  const groups = [[], [], []];
+  const rnd = mulberry32(20261121);
+  canopy.forEach((row, r) => {
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] !== "#") continue;
+      const roll = rnd();
+      const tone = r >= canopy.length - 3 ? 0 : roll < 0.15 ? 0 : roll < 0.7 ? 1 : 2;
+      groups[tone].push(
+        `<rect x="${canopyX + c * p}" y="${canopyY + r * p}" width="${p}" height="${p}"/>`,
+      );
+    }
+  });
+
+  parts.push(
+    `<g><animateTransform attributeName="transform" type="translate" values="0 0;${p} 0;0 0;-${p} 0;0 0" dur="8s" repeatCount="indefinite"/>${groups
+      .map((cells, i) => `<g fill="${theme.canopy[i]}">${cells.join("")}</g>`)
+      .join("")}</g>`,
+  );
+
+  parts.push(leaves(theme, cfg, canopyY, groundY, sceneW));
+
+  // Упавшие листья на земле.
+  for (let i = 0; i < 7; i++) {
+    const fx = 12 + ((i * 61) % (width - 26));
+    parts.push(
+      `<rect x="${fx}" y="${groundY + p * 2}" width="${p}" height="${p - 1}" fill="${theme.leaves[(i + 1) % theme.leaves.length]}"/>`,
+    );
+  }
+
+  return parts.join("");
+}
+
+function mulberry32(seed) {
+  let a = seed;
+  return function () {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function leaves(theme, cfg, canopyY, groundY, sceneW) {
+  const out = [];
+  const count = cfg.leafCount;
+
+  for (let i = 0; i < count; i++) {
+    const startX = 18 + ((i * 23) % (sceneW - 36));
+    const startY = canopyY + 30 + ((i * 17) % 40);
+    const fall = Math.max(30, groundY - startY + 4);
+    const drift = 8 + (i % 3) * 5;
+    const size = i % 3 === 0 ? 4 : 3;
+    const color = theme.leaves[i % theme.leaves.length];
+    const dur = 6 + (i % 4);
+    const begin = -(i * 0.85);
+
+    const path = `M0 0C${-drift} ${fall * 0.25} ${drift} ${fall * 0.45} ${-drift / 2} ${fall * 0.6}C${-drift * 1.4} ${fall * 0.75} ${drift / 2} ${fall * 0.9} 0 ${fall}`;
+
+    out.push(
+      `<g class="leaf" transform="translate(${startX} ${startY})">` +
+        `<rect width="${size}" height="${size}" fill="${color}">` +
+        `<animateMotion dur="${dur}s" begin="${begin}s" repeatCount="indefinite" path="${path}" rotate="auto"/>` +
+        `<animate attributeName="opacity" values="0;1;1;1;0" keyTimes="0;0.08;0.75;0.92;1" dur="${dur}s" begin="${begin}s" repeatCount="indefinite"/>` +
+        `</rect></g>`,
+    );
+  }
+
+  return out.join("");
+}
+
+function path(x, y, value, scale, fill, anchor = "start") {
+  const { d } = textPath(value, x, y, scale, anchor);
+  return d ? `<path d="${d}" fill="${fill}"/>` : "";
+}
+
+function fit(text, scale, maxWidth) {
+  if (measure(text, scale) <= maxWidth) return text;
+  let cut = text;
+  while (cut.length > 1 && measure(`${cut}.`, scale) > maxWidth) cut = cut.slice(0, -1);
+  return `${cut}.`;
 }
 
 function formatPct(value) {
@@ -163,13 +297,12 @@ function formatPct(value) {
 }
 
 // Русские формы множественного числа: 1 репозиторий, 2 репозитория, 5 репозиториев.
-function plural(count, forms) {
+function pluralForm(count, forms) {
   const mod10 = count % 10;
   const mod100 = count % 100;
-  let form = forms[2];
-  if (mod10 === 1 && mod100 !== 11) form = forms[0];
-  else if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) form = forms[1];
-  return `${count} ${form}`;
+  if (mod10 === 1 && mod100 !== 11) return forms[0];
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return forms[1];
+  return forms[2];
 }
 
 function die(message) {
